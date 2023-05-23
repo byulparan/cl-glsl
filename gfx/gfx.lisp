@@ -6,24 +6,8 @@
 (defun get-internal-seconds ()
   (* (/ 1.0 INTERNAL-TIME-UNITS-PER-SECOND) (get-internal-real-time)))
 
-(defun perspective-matrix (fovy aspect znear zfar)
-  (let ((f (coerce (/ (tan (* fovy (/ pi 360.0)))) 'single-float)))
-    (sb-cga:matrix (/ f aspect) 0.0 0.0 0.0
-                   0.0 f 0.0 0.0
-                   0.0 0.0 (/ (+ zfar znear) (- znear zfar)) (/ (* 2.0 zfar znear) (- znear zfar))
-                   0.0 0.0 -1.0 0.0)))
-
-(defun ortho-matrix (left right bottom top near far)
-  (let ((r-l (float (- right left)))
-        (t-b (float (- top bottom)))
-        (f-n (float (- far near))))
-    (sb-cga:matrix (/ 2 r-l) 0.0 0.0 (- (/ (+ right left) r-l))
-		   0.0 (/ 2 t-b) 0.0 (- (/ (+ top bottom) t-b))
-		   0.0 0.0 (/ -2 f-n) (- (/ (+ far near) f-n))
-		   0.0 0.0 0.0 1.0)))
 
 ;;; GPU STREAM
-
 (defun type-size (type)
   (labels ((cnt (type)
 	     (ecase type

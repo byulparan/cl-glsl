@@ -26,8 +26,6 @@
   (:use #:cl #:glsl)
   (:export #:deg-to-rad
 	   #:get-internal-seconds
-	   #:perspective-matrix
-	   #:ortho-matrix
 
 	   #:shader-environment
 	   #:release-environment
