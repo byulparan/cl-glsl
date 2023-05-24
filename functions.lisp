@@ -21,7 +21,7 @@
 								      ,@(mapcar #'(lambda (a) `(code-line ,(first a))) (caar body)))
 							     :read-p ,read-p
 							     :write-p ,write-p)))
-			  (t (error "not found function ~a with type ~a" ',name ',(mapcar #'second (caar body))))))))
+			  (t (error "not found function ~a with type ~a" ',name (mapcar #'code-type (list ,@(mapcar #'first (caar body))))))))))
      (setf (gethash ,(make-keyword name) *function-table*) ,name)))
 
 
