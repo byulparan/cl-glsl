@@ -91,14 +91,20 @@
 
 (defun process-uniform (shader)
   (loop for uniform in (shader-uniforms shader)
-	do (destructuring-bind (name type)
+	do (destructuring-bind (name type &optional count)
 	       uniform
 	     (when (gethash name *variable-table*)
 	       (error "already has name uniform var \"~a\"" name))
 	     (let* ((var-name (regex-replace-all "-" (string-downcase name) "_"))
-		    (newobj (make-code-object type var-name)))
+		    (newobj (if (not count) (make-code-object type var-name)
+			      (make-instance 'code-object-array
+				:size count
+				:base-type type
+				:code-type (list :array type count)
+				:code-line (format nil "~a" var-name)))))
 	       (setf (gethash name *variable-table*) newobj)
-	       (format *stream* "uniform ~a ~a;~%" (code-type-name newobj) (code-line newobj))))))
+	       (if (not count) (format *stream* "uniform ~a ~a;~%" (code-type-name newobj) (code-line newobj))
+		 (format *stream* "uniform ~a ~a[~d];~%" (code-type-name newobj) (code-line newobj) count))))))
 
 (defun process-shader (shader)
   (let* ((*glsl-version* (shader-version shader))

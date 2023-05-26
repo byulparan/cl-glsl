@@ -67,14 +67,21 @@
 
 (defun function-args-parse (args)
   (labels ((args-parse (args)
-	       (destructuring-bind (name type &optional (scope :in))
+	       (destructuring-bind (name type &optional (scope :in) size)
 		   args
 		 (assert (find scope (list :in :out :inout)))
-		 (let ((newobj (make-code-object type (symbol-gen name) :write-p t)))
+		 (let ((newobj
+			 (if (not size) (make-code-object type (symbol-gen name) :write-p t)
+			   (make-instance 'code-object-array :size size
+					  :code-type (list :array :float size)
+					  :code-line (format nil "~a" (string-downcase name))
+					  :write-p nil
+					  :base-type :float))))
 		   (setf (gethash name *variable-table*) newobj)
 		   (format nil "~{~a~^ ~}" (list (string-downcase scope)
 						 (code-type-name newobj)
-						 (code-line newobj)))))))
+						 (if (not size) (code-line newobj)
+						   (format nil "~a[~d]" (code-line newobj) size))))))))
     (format nil "(~{~a~^, ~})" (mapcar #'args-parse args))))
 
 (defun packlized-name (name)
@@ -104,23 +111,36 @@
 	      (format *stream* "~a;~%" (code-line body-return))
 	    (format *stream* "~@[return ~a;~%~]" (code-line body-return)))))
       (dolist (r *return-value*)
-	(assert (eql (code-type body-return) (code-type r)))))
+	(assert (eql (code-type body-return) (code-type r)) nil
+		"GLSL: compile function \"~a\" with no match return type ~a != ~a"
+		name
+		(code-type body-return)
+		(code-type r))))
     (setf (gethash name *function-table*)
       (let* ((rename-args (mapcar (lambda (arg) (intern (format nil "~a_D" (first arg)))) args)))
 	(eval
 	 `(lambda ,rename-args
-	    (assert (equal ',(mapcar #'second args) (mapcar #'code-type ,(cons 'list rename-args))))
+	    (assert (equal ',(mapcar #'(lambda (obj) (code-type (gethash (first obj) *variable-table*))) args)
+			   (mapcar #'code-type ,(cons 'list rename-args))) nil
+			   "GLSL: call function \"~a\" with wrong type input ~a != ~a"
+			   ',name
+			   ',(mapcar #'(lambda (obj) (code-type (gethash (first obj) *variable-table*))) args)
+			   (mapcar #'code-type ,(cons 'list rename-args)))
 	    ,@(loop for name in rename-args
 		    for scope in (mapcar (lambda (arg) (third arg)) args)
 		    collect  (when (and scope (not (eql scope :in)))
 			       `(assert (write-p ,name))))
 	    (make-code-object (code-type ,body-return)
 			      (format nil "~a(~{~a~^,~})" ,function-name
-				      (mapcar #'code-line ,(cons 'list rename-args)))
+				      (let* ((arg (mapcar #'code-line ,(cons 'list rename-args))))
+					(assert (every #'identity arg) nil "GLSL: call function \"~a\" with object which no have code-line" ',name)
+					arg))
 			      :use-global-p t)))))
     (let* ((return-type (code-type-name body-return)))
       (when (boundp '*return-value*)
 	(setf *return-value* (make-keyword (string-upcase return-type))))
+      (when (typep  body-return 'code-object-array)
+	(error "GLSL: compile function \"~a\" with returned array object" name))
       (format *stream* "~a ~a ~a {~%~{~2t~a~%~}}"
 	      return-type
 	      function-name

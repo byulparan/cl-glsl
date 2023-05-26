@@ -158,10 +158,15 @@
        ,@body)))
 
 (defmacro defun-g (name args &body body)
-  `(with-update-global ,name (list glsl::*return-value* ',(mapcar #'second args))
-       :function
-     (glsl::compile-form
-      '(labels ((,name ,args ,@body))))))
+  (flet ((process-arg (arg)
+	   (destructuring-bind (name type &optional scope count)
+	       arg
+	     (if (not count) type
+	       (list :array type count)))))
+    `(with-update-global ,name (list glsl::*return-value* ',(mapcar #'process-arg args))
+	 :function
+       (glsl::compile-form
+	'(labels ((,name ,args ,@body)))))))
 
 (defmacro defvar-g (name body)
   `(with-update-global ,name glsl::*return-value*

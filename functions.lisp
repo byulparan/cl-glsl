@@ -85,7 +85,7 @@
   (assert (eql :int (code-type n)) nil "invalid aref access to ~s by ~a" (code-line object) (code-line n))
   (let ((indx (code-line n)))
     (when (numberp indx)
-      (assert (> (code-len object) indx) nil "array index out of range '~a'" indx)))
+      (assert (> (code-len object) indx) nil "GLSL: array \"~a\" index out of range [~d/~d]" (code-line object) indx (code-len object))))
   (make-code-object (cond ((vector-p object) :float)
 			  ((matrix-p object) (ecase (code-len object)
 					       (16 :vec4)
