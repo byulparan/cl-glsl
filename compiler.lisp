@@ -73,10 +73,10 @@
 		 (let ((newobj
 			 (if (not size) (make-code-object type (symbol-gen name) :write-p t)
 			   (make-instance 'code-object-array :size size
-					  :code-type (list :array :float size)
+					  :code-type (list :array type size)
 					  :code-line (format nil "~a" (string-downcase name))
 					  :write-p nil
-					  :base-type :float))))
+					  :base-type type))))
 		   (setf (gethash name *variable-table*) newobj)
 		   (format nil "~{~a~^ ~}" (list (string-downcase scope)
 						 (code-type-name newobj)
