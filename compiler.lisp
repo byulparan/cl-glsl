@@ -111,7 +111,7 @@
 	      (format *stream* "~a;~%" (code-line body-return))
 	    (format *stream* "~@[return ~a;~%~]" (code-line body-return)))))
       (dolist (r *return-value*)
-	(assert (eql (code-type body-return) (code-type r)) nil
+	(assert (check-glsl-type body-return r) nil
 		"GLSL: compile function \"~a\" with no match return type ~a != ~a"
 		name
 		(code-type body-return)
@@ -120,12 +120,14 @@
       (let* ((rename-args (mapcar (lambda (arg) (intern (format nil "~a_D" (first arg)))) args)))
 	(eval
 	 `(lambda ,rename-args
-	    (assert (equal ',(mapcar #'(lambda (obj) (code-type (gethash (first obj) *variable-table*))) args)
-			   (mapcar #'code-type ,(cons 'list rename-args))) nil
-			   "GLSL: call function \"~a\" with wrong type input ~a != ~a"
-			   ',name
-			   ',(mapcar #'(lambda (obj) (code-type (gethash (first obj) *variable-table*))) args)
-			   (mapcar #'code-type ,(cons 'list rename-args)))
+	    (assert (every #'identity
+			   (mapcar #'check-glsl-type
+				   ',(mapcar #'(lambda (obj) (gethash (first obj) *variable-table*)) args)
+				    ,(cons 'list rename-args)))
+		    nil "GLSL: call function \"~a\" with wrong type input ~a != ~a"
+		    ',name
+		    ',(mapcar #'(lambda (obj) (code-type (gethash (first obj) *variable-table*))) args)
+		    (mapcar #'code-type ,(cons 'list rename-args)))
 	    ,@(loop for name in rename-args
 		    for scope in (mapcar (lambda (arg) (third arg)) args)
 		    collect  (when (and scope (not (eql scope :in)))
@@ -197,14 +199,14 @@
 	  (when (or (not (expression-p obj)) (eql :void (code-type obj)))
 	    (error "\"~s\" is not expression(maybe if,for) or void return form!" form))
 	  (setf (gethash name *variable-table*) (if (typep obj 'code-object-array)
-					       (make-instance 'code-object-array
-						 :base-type (base-type obj)
-						 :code-type (code-type obj)
-						 :code-line var-name
-						 :use-global-p nil
-						 :write-p t
-						 :size (size obj))
-					     (make-code-object (code-type obj) var-name :write-p t)))
+						    (make-instance 'code-object-array
+						      :base-type (base-type obj)
+						      :code-type (code-type obj)
+						      :code-line var-name
+						      :use-global-p nil
+						      :write-p t
+						      :size (size obj))
+						  (make-code-object (code-type obj) var-name :write-p t)))
 	  (format *stream* "~&~a ~a~@[ = ~a~];~%"
 		  (code-type-name obj)
 		  (if (typep obj 'code-object-array) (format nil "~a[~a]" var-name (size obj)) var-name)
@@ -217,11 +219,12 @@
       (let ((return-obj (compile-form (last-elt body))))
 	return-obj))))
 
+
 (defun %setq (name form)
   (let ((var (compile-form name))
 	(code (compile-form form)))
     (assert (expression-p code) nil "\"~a\" is not expression." form)
-    (assert (equal (code-type var) (code-type code)) nil "~a is difference ~a." (code-type var) (code-type code))
+    (assert (check-glsl-type var code) nil "GLSL: can't assign ~a type value to ~a type varaible "  (code-type code) (code-type var) )
     (let ((array-p (mapcar #'(lambda (obj) (typep obj 'code-object-array)) (list var code))))
       (assert (apply #'eql array-p) nil
 	      "non array mismatch \"~a, ~a\"" (code-line var) (code-line code))

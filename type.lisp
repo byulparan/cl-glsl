@@ -100,3 +100,9 @@
     :expression-p expression-p))
 
 
+(defun check-glsl-type (a b)
+  (or (every #'number-p (list a b))
+      (equal (code-type a) (code-type b))))
+
+
+
