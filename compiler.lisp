@@ -69,7 +69,7 @@
   (labels ((args-parse (args)
 	       (destructuring-bind (name type &optional (scope :in) size)
 		   args
-		 (assert (find scope (list :in :out :inout)))
+		 (assert (find scope (list :in :out :inout)) nil "GLSL: ~a is not valid function scope name" scope)
 		 (let ((newobj
 			 (if (not size) (make-code-object type (symbol-gen name) :write-p t)
 			   (make-instance 'code-object-array :size size
