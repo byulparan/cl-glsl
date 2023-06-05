@@ -18,18 +18,18 @@
     (cnt type)))
 
 (defun make-gpu-stream (type data &key index-data (core-profile t))
-  (let* ((type (alexandria:ensure-list type))
-	 (gpu-stream (make-%gpu-stream :types (mapcar #'second type)
-				       :names (mapcar (lambda (c)
-							(string-downcase (first c)))
-						      type)
+  (let* ((type-size (mapcar #'type-size (mapcar #'second type)))
+	 (gpu-stream (make-%gpu-stream :types type
+				       :strides (apply #'+ type-size)
+				       :offsets (cons 0 (butlast type-size))
+				       :names (mapcar #'first type)
 				       :core-profile core-profile
 				       :update-time (get-internal-real-time))))
     (gpu-stream-set gpu-stream data :index-data index-data)
     gpu-stream))
 
 (defun gpu-stream-set (gpu-stream data &key index-data)
-  (let* ((sizes (mapcar #'type-size (%gpu-stream-types gpu-stream)))
+  (let* ((sizes (mapcar #'type-size (mapcar #'second (%gpu-stream-types gpu-stream))))
 	 (size (apply #'+ sizes)))
     (etypecase data
       (list (let ((data-array (alexandria:flatten data)))
@@ -46,35 +46,51 @@
 							       #+lispworks :static)
 		    (%gpu-stream-length gpu-stream) data))
       ((simple-array single-float (*)) (setf (%gpu-stream-array gpu-stream) data
-					     (%gpu-stream-length gpu-stream) (/ (length data) size)))
-      ((simple-array (unsigned-byte 8) (*)) (setf (%gpu-stream-array gpu-stream) data
-						  (%gpu-stream-length gpu-stream) (/ (length data) size 4)))
-      (gl:gl-array (setf (%gpu-stream-array gpu-stream) data
-			 (%gpu-stream-length gpu-stream) (/ (gl:gl-array-byte-size data) size 4))))
+					     (%gpu-stream-length gpu-stream) (/ (length data) size))))
     (when index-data
       (etypecase index-data
 	(list (let* ((index-array (alexandria:flatten index-data)))
 		(setf (%gpu-stream-index-array gpu-stream)
 		  (make-array (length index-array) :element-type '(unsigned-byte 32)
 			      :initial-contents index-array))))
-	((simple-array (unsigned-byte 32) (*)) (setf (%gpu-stream-index-array gpu-stream) index-data))
-	((simple-array (unsigned-byte 8) (*)) (setf (%gpu-stream-index-array gpu-stream) index-data)))))
+	((simple-array (unsigned-byte 32) (*)) (setf (%gpu-stream-index-array gpu-stream) index-data)))))
   (setf (%gpu-stream-update-time gpu-stream) (get-internal-real-time)))
 
-(defun gpu-stream-do-each (gpu-stream function)
-  (let ((stream-array (%gpu-stream-array gpu-stream))
-	(size (type-size (%gpu-stream-types gpu-stream))))
-    (loop for i from 0 below (%gpu-stream-length gpu-stream)
-	  do (let ((result (funcall function i (loop for j from (* i size) below (+ size (* i size))
-						     collect (aref stream-array j)))))
-	       (loop for j from (* i size) 
-		     for v in result 
-		     do (setf (aref stream-array j) v)))))
-  (setf (%gpu-stream-update-time gpu-stream) (get-internal-real-time)))
 
 (defun gpu-stream-length (gpu-stream)
   (if (%gpu-stream-index-array gpu-stream) (length (%gpu-stream-index-array gpu-stream))
     (%gpu-stream-length gpu-stream)))
+
+
+(defun vertex (stream name index)
+  (let* ((types (%gpu-stream-types stream))
+	 (size (type-size (second (assoc name types))))
+	 (offset (nth (position name types :key #'car) (%gpu-stream-offsets stream)))
+	 (stride (%gpu-stream-strides stream))
+	 (array (%gpu-stream-array stream))
+	 (result-value (ecase size
+			 (1 nil)
+			 (2 (make-array 2 :element-type 'single-float))
+			 (3 (make-array 3 :element-type 'single-float)))))
+    (if (= size 1) (setf result-value (aref array (+  offset (* index stride))))
+      (loop for i below size
+	    do (setf (aref result-value i)  (aref array (+ i offset (* index stride))))))
+    result-value))
+
+
+(defun (setf vertex) (values stream name index)
+  (let* ((types (%gpu-stream-types stream))
+	 (size (type-size (second (assoc name types))))
+	 (offset (nth (position name types :key #'car) (%gpu-stream-offsets stream)))
+	 (stride (%gpu-stream-strides stream))
+	 (array (%gpu-stream-array stream))
+	 (in-values (if (numberp values) (list values) values)))
+    (assert (= (length in-values) size))
+    (loop for i below size
+	  do (setf (aref array (+ i offset (* index stride))) (elt in-values i)))
+    (setf (%gpu-stream-update-time stream) (get-internal-real-time))
+    values))
+
 
 
 ;;; PIPELINE
@@ -286,7 +302,7 @@
 	 (setf (gethash ',name *all-pipeline-table*) ,pipeline)
 	 (defun ,name  ,(append (list 'environment 'mode 'first 'count 'stream)
 			 (list '&key 'instance) (when uniforms (mapcar #'first uniforms)))
-	   (assert (equal ',stream-type (%gpu-stream-types stream)))
+	   (assert (equal ',stream-type (mapcar #'second (%gpu-stream-types stream))))
 	   (update-pipeline environment ,pipeline)
 	   (update-gpu-stream environment stream)
 	   (when (getf (shaders environment) ',name)
@@ -322,7 +338,7 @@
 	 		     (strides (getf (%gpu-stream-info stream) :strides))
 	 		     (offsets (getf (%gpu-stream-info stream) :offsets)))
 	 		(loop for i from 0 below (length sizes)
-	 		      for name in (%gpu-stream-names stream)
+	 		      for name in (mapcar #'string-downcase (%gpu-stream-names stream))
 	 		      do
 	 			 (let* ((idx (gl:get-attrib-location ,program name)))
 	 			   (gl:vertex-attrib-pointer idx (elt sizes i) :float nil strides (elt offsets i)))))

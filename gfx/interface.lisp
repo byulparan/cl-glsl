@@ -14,12 +14,14 @@
   index-array
   length
   update-time
-  info)
+  info
+  strides
+  offsets)
 
 
 (defmethod print-object ((entry %gpu-stream) stream)
   (format stream "#S(%GPU-STREAM :TYPE ~a :CORE-PROFILE ~a :LENGTH ~d)"
-	  (%gpu-stream-types entry)
+	  (%gpu-stream-types entry) 
 	  (%gpu-stream-core-profile entry)
 	  (gpu-stream-length entry)))
 

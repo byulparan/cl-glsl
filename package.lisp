@@ -31,9 +31,8 @@
 	   #:release-environment
 	   
 	   #:make-gpu-stream
-	   #:gpu-stream-set
 	   #:gpu-stream-length
-	   #:gpu-stream-do-each
+	   #:vertex 
 	   
 	   #:make-shader-object
 	   #:with-shader
