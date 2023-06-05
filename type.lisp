@@ -8,7 +8,7 @@
 	:float :int
 	:mat2 :mat3 :mat4 :vec2 :vec3 :vec4 :ivec2 :ivec3 :ivec4
 	:bvec2 :bvec3 :bvec4
-	:sampler-2d :sampler-2d-rect :sampler-cube))
+	:sampler-2d :sampler-2d-rect :sampler-cube :sampler-buffer))
 
 (defvar *all-glsl-type* (copy-list *default-glsl-type*))
 
@@ -59,6 +59,7 @@
     (:sampler-2d "sampler2D")
     (:sampler-2d-rect "sampler2DRect")
     (:sampler-cube "samplerCube")
+    (:sampler-buffer "samplerBuffer")
     (t (let* ((type-name (if (keywordp code-type) (string-downcase code-type) ;; 코어 타입
 			   ;; 구조체(유저 정의) 타입
 			   (string-downcase (format nil "~a_~a"

@@ -297,7 +297,7 @@
 	     				    ,program
 	     				    ,(ppcre:regex-replace-all "-" (string-downcase (first uniform)) "_"))))
 	     			 (ecase (second uniform)
-	     			   ((:int :sampler-2d :sampler-2d-rect :sampler-cube)
+	     			   ((:int :sampler-2d :sampler-2d-rect :sampler-cube :sampler-buffer)
 				    `(%gl:uniform-1i ,loc ,(first uniform)))
 	     			   (:float `(gl:uniformf ,loc ,(first uniform)))
 	     			   (:mat4 `(gl:uniform-matrix-4fv ,loc ,(first uniform) nil))

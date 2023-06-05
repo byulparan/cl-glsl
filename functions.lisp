@@ -527,8 +527,11 @@
 
 (setf (gethash :texture-lod *function-table*) #'%texture-lod)
 
-(add-function texel-fetch "texelFetch(~a,~a,~a)" nil
-  (((a :sampler-2d) (b :ivec2) (c :int)) :vec4))
+(defun %texel-fetch (sampler p &optional lod)
+  (if lod (make-code-object :vec4 (format nil "texelFetch(~a,~a,~a)" (code-line sampler) (code-line p) (code-line lod)))
+    (make-code-object :vec4 (format nil "texelFetch(~a,~a)" (code-line sampler) (code-line p)))))
+
+(setf (gethash :texel-fetch *function-table*) #'%texel-fetch)
 
 (defun %texture-size (sampler)
   (make-code-object :vec2 (format nil "textureSize(~a)" (code-line sampler))))
