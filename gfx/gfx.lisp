@@ -299,57 +299,5 @@
 					 :geometry-src ',(find :geometry stages :key #'car)
 					 :fragment-src ',(find :fragment stages :key #'car))))
 	 (compile-pipeline ,pipeline)
-	 (setf (gethash ',name *all-pipeline-table*) ,pipeline)
-	 (defun ,name  ,(append (list 'environment 'mode 'first 'count 'stream)
-			 (list '&key 'instance) (when uniforms (mapcar #'first uniforms)))
-	   (assert (equal ',stream-type (mapcar #'second (%gpu-stream-types stream))))
-	   (update-pipeline environment ,pipeline)
-	   (update-gpu-stream environment stream)
-	   (when (getf (shaders environment) ',name)
-	     (let ((,program (second (getf (shaders environment) ',name))))
-	       (%gl:use-program ,program)
-	       ,@(loop for uniform in (reverse uniforms)
-	     	       collect (let ((loc `(gl:get-uniform-location
-	     				    ,program
-	     				    ,(ppcre:regex-replace-all "-" (string-downcase (first uniform)) "_"))))
-	     			 (ecase (second uniform)
-	     			   ((:int :sampler-2d :sampler-2d-rect :sampler-cube :sampler-buffer)
-				    `(%gl:uniform-1i ,loc ,(first uniform)))
-	     			   (:float `(gl:uniformf ,loc ,(first uniform)))
-	     			   (:mat4 `(gl:uniform-matrix-4fv ,loc ,(first uniform) nil))
-	     			   (:vec3 `(apply #'gl:uniformf ,loc ,(first uniform)))
-	     			   (:vec2 `(apply #'gl:uniformf ,loc ,(first uniform))))))
-	       ,(ecase version
-	 	  (330 `(progn
-	 		  (%gl:bind-vertex-array (second (getf (buffers environment) stream)))
-			  (if (fourth (getf (buffers environment) stream))
-			      (if instance
-				  (%gl:draw-elements-instanced mode count :unsigned-int 0 instance)
-				(%gl:draw-elements mode count :unsigned-int 0))
-			    (if instance
-				(gl:draw-arrays-instanced mode first count instance)
-			      (%gl:draw-arrays mode first count)))
-	 		  (%gl:bind-vertex-array 0)
-	 		  (%gl:use-program 0)))
-	 	  (120
-	 	   `(let* ((buffers (getf (buffers environment) stream)))
-	 	      (gl:bind-buffer :array-buffer (third buffers))
-	 	      (let* ((sizes (getf (%gpu-stream-info stream) :sizes))
-	 		     (strides (getf (%gpu-stream-info stream) :strides))
-	 		     (offsets (getf (%gpu-stream-info stream) :offsets)))
-	 		(loop for i from 0 below (length sizes)
-	 		      for name in (mapcar #'string-downcase (%gpu-stream-names stream))
-	 		      do
-	 			 (let* ((idx (gl:get-attrib-location ,program name)))
-	 			   (gl:vertex-attrib-pointer idx (elt sizes i) :float nil strides (elt offsets i)))))
-		      (if (fourth (getf (buffers environment) stream))
-			  (progn
-			    (gl:bind-buffer :element-array-buffer (fourth buffers))
-			    (%gl:draw-elements mode count :unsigned-int 0)
-			    (gl:bind-buffer :element-array-buffer 0))
-			(if instance
-			    (gl:draw-arrays-instanced mode first count instance)
-			  (%gl:draw-arrays mode first count)))
-	 	      (gl:bind-buffer :array-buffer 0)
-	 	      (gl:use-program 0)))))))))))
+	 (setf (gethash ',name *all-pipeline-table*) ,pipeline)))))
 
