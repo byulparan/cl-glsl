@@ -66,7 +66,19 @@
 
 
 ;;; shader program
-(defun make-shader-program (pipeline)
+
+(defun setup-tf-varying (program tf-varying)
+  (let* ((names (mapcar #'(lambda (name) (ppcre:regex-replace-all "-" (string-downcase name) "_")) tf-varying))
+	 (name-buffers (mapcar #'(lambda (name) (cffi:foreign-string-alloc name)) names)))
+    (unwind-protect
+	 (cffi:with-foreign-objects ((varying :pointer (length names)))
+	   (dotimes (i (length names))
+	     (setf (cffi:mem-aref varying :pointer i) (nth i name-buffers)))
+	   (%gl:transform-feedback-varyings program (length names) varying :interleaved-attribs))
+      (dolist (ptr name-buffers)
+	(cffi:foreign-string-free ptr)))))
+
+(defun make-shader-program (pipeline tf-varying)
   (let ((success t)
 	(program (%gl:create-program))
 	(shaders nil))
@@ -80,7 +92,10 @@
 				 (gl:compile-shader shader)
 				 (unless (gl:get-shader shader :compile-status)
 				   (error (gl:get-shader-info-log shader)))
-				 (gl:attach-shader program shader))))
+				 (gl:attach-shader program shader)
+				 (when (and (eql type :vertex-shader)
+					    tf-varying)
+				   (setup-tf-varying program tf-varying)))))
       (error (c) (progn (break (format nil "~a" c))
 			(dolist (sh shaders)
 			  (gl:delete-shader sh))
@@ -91,7 +106,7 @@
 		  (values program (reverse shaders)))
       (values nil nil))))
 
-(defun update-pipeline (environment pipeline)
+(defun update-pipeline (environment pipeline tf-varying)
   "refresh opengl program and shaders used native gl compiler."
   (let* ((name (%pipeline-name pipeline))
 	 (src (getf (shaders environment) name)))
@@ -107,7 +122,7 @@
 	  (gl:delete-program program)
 	  (alexandria:remove-from-plistf (shaders environment) name)))
       (multiple-value-bind (program shaders)
-	  (make-shader-program pipeline)
+	  (make-shader-program pipeline tf-varying)
 	(setf (%pipeline-cached-uniform-location pipeline) (make-hash-table))
 	(when program
 	  (setf (getf (shaders environment) name) (list (%pipeline-update-time pipeline) program shaders)))))))

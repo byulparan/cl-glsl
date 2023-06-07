@@ -22,7 +22,7 @@
 				 (if fragment (cons fragment 0)))))
 
 
-(defun update-shader-object (environment shader-object)
+(defun update-shader-object (environment shader-object &key tf-varying)
   (let* ((so shader-object)
 	 (src (getf (shaders environment) shader-object)))
     (when (or (not src)
@@ -52,7 +52,9 @@
 			      (gl:compile-shader shader)
 			      (unless (gl:get-shader shader :compile-status)
 				(error (gl:get-shader-info-log shader)))
-			      (gl:attach-shader program shader)))
+			      (gl:attach-shader program shader)
+			      (when (and (eql type :vertex-shader) tf-varying)
+				(setup-tf-varying program tf-varying))))
 	  (error (c) (progn (break (format nil "~a" c))
 			    (dolist (sh shaders)
 			      (gl:delete-shader sh))
@@ -65,7 +67,7 @@
 	  (setf (shader-object-cached-uniform-location so) (make-hash-table))
 	  (gl:link-program program))))))
 
-(defmacro with-shader ((environment shader-object stream program) &body body)
+(defmacro with-shader ((environment shader-object stream program &key tf-varying) &body body)
   (alexandria:with-gensyms (cached-uniform-location)
     `(let* ((,cached-uniform-location nil))
        (if (typep ,shader-object 'shader-object) (progn
@@ -73,7 +75,7 @@
 						   (setf ,cached-uniform-location
 						     (shader-object-cached-uniform-location ,shader-object)))
 	 (let* ((pipeline (gethash ,shader-object *all-pipeline-table*)))
-	   (update-pipeline ,environment pipeline)
+	   (update-pipeline ,environment pipeline ,tf-varying)
 	   (setf ,cached-uniform-location (%pipeline-cached-uniform-location pipeline))))
        (update-gpu-stream ,environment ,stream)
        (let* ((,program (cadr (getf (shaders ,environment) ,shader-object))))
