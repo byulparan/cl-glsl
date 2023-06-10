@@ -7,6 +7,13 @@
 	    :accessor buffers)))
 
 
+(defun shader (environment shader-object)
+  (second (getf (shaders environment) shader-object)))
+
+(defun vbo (environment gpu-stream)
+  (third (getf (buffers environment) gpu-stream)))
+
+
 ;;; gpu-stream
 (defun register-gpu-stream (environment gpu-stream)
   "create VAO and VBO, IBO. and register vertex-attrib-pointer to VAO"

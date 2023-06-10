@@ -27,6 +27,8 @@
   (:export #:deg-to-rad
 	   #:get-internal-seconds
 
+	   #:shader
+	   #:vbo
 	   #:shader-environment
 	   #:release-environment
 
