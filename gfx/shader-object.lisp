@@ -67,8 +67,8 @@
 	  (setf (shader-object-cached-uniform-location so) (make-hash-table))
 	  (gl:link-program program))))))
 
-(defmacro with-shader ((environment shader-object stream program &key tf-varying) &body body)
-  (alexandria:with-gensyms (cached-uniform-location)
+(defmacro with-shader ((environment shader-object stream &key tf-varying) &body body)
+  (alexandria:with-gensyms (cached-uniform-location program)
     `(let* ((,cached-uniform-location nil))
        (if (typep ,shader-object 'shader-object) (progn
 						   (update-shader-object ,environment ,shader-object)
