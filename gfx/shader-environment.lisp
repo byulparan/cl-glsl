@@ -42,12 +42,10 @@
 	      do (gl:enable-vertex-attrib-array i)
 		 (when core-profile
 		   (gl:vertex-attrib-pointer i (elt sizes i) :float nil strides (elt offsets i))))
-	(gl:bind-buffer :array-buffer 0)
 	(when (%gpu-stream-index-array gpu-stream)
 	  (setf ibo (gl:gen-buffer))
 	  (gl:bind-buffer :element-array-buffer ibo)
-	  (%gl:buffer-data :element-array-buffer (* 4 (length (%gpu-stream-index-array gpu-stream))) (cffi:null-pointer) :static-draw)
-	  (gl:bind-buffer :element-array-buffer 0))
+	  (%gl:buffer-data :element-array-buffer (* 4 (length (%gpu-stream-index-array gpu-stream))) (cffi:null-pointer) :static-draw))
 	(setf (%gpu-stream-info gpu-stream) (list :sizes sizes :strides strides :offsets offsets))
 	(when core-profile
 	  (gl:bind-vertex-array 0)))
