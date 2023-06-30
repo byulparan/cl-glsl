@@ -426,6 +426,10 @@
   (((a number-p)) :float)
   (((a vector-p)) (code-type a)))
 
+(add-function round "round(~a)" nil
+  (((a number-p)) :float)
+  (((a vector-p)) (code-type a)))
+
 (add-function refract "refract(~a,~a,~a)" nil
   (((a number-p) (b number-p) (c number-p)) :float)
   (((a vector-p) (b vector-p) (c number-p)) (code-type a) (code-type-equal a b)))
