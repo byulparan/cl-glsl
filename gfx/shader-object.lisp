@@ -67,7 +67,7 @@
 	  (setf (shader-object-cached-uniform-location so) (make-hash-table))
 	  (gl:link-program program))))))
 
-(defmacro with-shader ((environment shader-object stream &key tf-varying) &body body)
+(defmacro with-shader ((environment shader-object stream &key tf-varying debug) &body body)
   (alexandria:with-gensyms (cached-uniform-location program)
     `(let* ((,cached-uniform-location nil))
        (if (typep ,shader-object 'shader-object) (progn
@@ -90,7 +90,9 @@
 				     (float #'gl:uniformf)
 				     (list #'(lambda (location lst) (apply #'gl:uniformf location lst)))
 				     ((simple-array single-float (*)) (lambda (location vector) (gl:uniform-matrix-4fv location vector nil))))))
-			  (setf location (cons fun loc)))
+			  (setf location (cons fun loc))
+			  (when ,debug
+			    (format t "register uniform location ~d for ~a~%" loc name)))
 			(setf (gethash name ,cached-uniform-location) location))
 		      (funcall (car location) (cdr location) value))))
 	     (gl:bind-vertex-array (second (getf (buffers ,environment) ,stream)))
