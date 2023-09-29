@@ -184,7 +184,8 @@
   (((a :int) (b :float)) :float)
   (((a vector-p) (b number-p)) (code-type a))
   (((a number-p) (b vector-p)) (code-type b))
-  (((a vector-p) (b vector-p)) (code-type a) (code-type-equal a b)))
+  (((a vector-p) (b vector-p)) (code-type a) (code-type-equal a b))
+  (((a matrix-p) (b matrix-p)) (code-type a) (code-type-equal a b)))
 
 (defun %+ (&rest args)
   (let ((object (reduce (gethash :add *function-table*) args)))
@@ -218,7 +219,9 @@
   (((a vector-p) (b vector-p)) (code-type a) (code-type-equal a b))
   (((a matrix-p) (b vector-p)) (code-type b) (= (sqrt (code-len a)) (code-len b)))
   (((a vector-p) (b matrix-p)) (code-type a) (= (sqrt (code-len b)) (code-len a)))
-  (((a matrix-p) (b matrix-p)) (code-type a) (= (code-len a) (code-len b))))
+  (((a matrix-p) (b matrix-p)) (code-type a) (= (code-len a) (code-len b)))
+  (((a matrix-p) (b number-p)) (code-type a))
+  (((a number-p) (b matrix-p)) (code-type b)))
 
 (defun %* (&rest args)
   (let ((object (reduce (gethash :multiply *function-table*) args)))
