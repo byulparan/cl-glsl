@@ -34,6 +34,8 @@
   (format stream "#<CODE-OBJECT-ARRAY ~s[~a]>" (code-type c) (size c)))
 
 (defmethod initialize-instance :after ((self code-object-array) &key)
+  (when (find (size self) (list 0 1))
+    (error "Array should not be 0 or 1"))
   (unless (member (base-type self) *default-glsl-type*)
     (when (boundp '*used-global*)
       (pushnew (base-type self) *used-global*))))

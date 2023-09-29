@@ -8,20 +8,30 @@
 
 
 ;;; GPU STREAM
-(defun type-size (type)
+(defun type-sizes (types)
   (labels ((cnt (type)
 	     (ecase type
+	       (:vec4 4)
 	       (:vec3 3)
 	       (:vec2 2)
 	       (:float 1)
 	       (:int 1))))
-    (cnt type)))
+    (alexandria:flatten
+     (loop for sz in (mapcar #'cnt (mapcar #'second types))
+	   for len in (mapcar (lambda (size)
+				(when (and size (find size (list 0 1)))
+				  (error "Array size should not be 0 or 1"))
+				(if size size 1))
+			      (mapcar #'third types))
+	   collect (loop for i below len collect sz)))))
 
 (defun make-gpu-stream (type data &key index-data (core-profile t))
-  (let* ((type-size (mapcar #'type-size (mapcar #'second type)))
+  (let* ((type-size (type-sizes type))
 	 (gpu-stream (make-%gpu-stream :types type
-				       :strides (apply #'+ type-size)
-				       :offsets (cons 0 (butlast type-size))
+				       :stride (apply #'+ type-size)
+				       :offsets (loop for sz in type-size
+						      and offset = 0 then (+ offset sz)
+						      collect offset)
 				       :names (mapcar #'first type)
 				       :core-profile core-profile
 				       :update-time (get-internal-real-time))))
@@ -29,7 +39,7 @@
     gpu-stream))
 
 (defun gpu-stream-set (gpu-stream data &key index-data)
-  (let* ((sizes (mapcar #'type-size (mapcar #'second (%gpu-stream-types gpu-stream))))
+  (let* ((sizes (type-sizes (%gpu-stream-types gpu-stream) ))
 	 (size (apply #'+ sizes)))
     (etypecase data
       (list (let ((data-array (alexandria:flatten data)))
@@ -64,9 +74,10 @@
 
 (defun vertex (stream name index)
   (let* ((types (%gpu-stream-types stream))
-	 (stride (%gpu-stream-strides stream))
-	 (size (if (eql name :all) stride (type-size (second (assoc name types)))))
-	 (offset (if (eql name :all) 0 (nth (position name types :key #'car) (%gpu-stream-offsets stream))))
+	 (stride (%gpu-stream-stride stream))
+	 (name-index (position name types :key #'car))
+	 (size (if (eql name :all) stride (nth name-index  (type-sizes types))))
+	 (offset (if (eql name :all) 0 (nth name-index (%gpu-stream-offsets stream))))
 	 (array (%gpu-stream-array stream))
 	 (result-value (case size
 			 (1 nil)
@@ -79,9 +90,10 @@
 
 (defun (setf vertex) (values stream name index)
   (let* ((types (%gpu-stream-types stream))
-	 (stride (%gpu-stream-strides stream))
-	 (size (if (eql name :all) stride (type-size (second (assoc name types)))))
-	 (offset (if (eql name :all) 0 (nth (position name types :key #'car) (%gpu-stream-offsets stream))))
+	 (stride (%gpu-stream-stride stream))
+	 (name-index (position name types :key #'car))
+	 (size (if (eql name :all) stride (nth name-index  (type-sizes types)) ))
+	 (offset (if (eql name :all) 0 (nth name-index (%gpu-stream-offsets stream))))
 	 (array (%gpu-stream-array stream))
 	 (in-values (if (numberp values) (list values) values)))
     (assert (= (length in-values) size))

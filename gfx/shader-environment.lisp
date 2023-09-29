@@ -24,15 +24,10 @@
 	  (ibo nil))
       (when core-profile
 	(setf vao (gl:gen-vertex-array)))
-      (let* ((stream-type (mapcar #'second (%gpu-stream-types gpu-stream)))
-	     (sizes (mapcar #'type-size stream-type))
-	     (offsets (list (cffi:null-pointer)))
-	     (strides 0)
-	     (float-size (cffi:foreign-type-size :float)))
-	(setf strides (apply #'+ (mapcar #'(lambda (s)(* float-size s)) sizes))
-	      offsets (cons 0 (loop for i in (mapcar #'(lambda (s)(* float-size s)) (butlast sizes))
-				    and b = 0 then (+ b i)
-				    collect (+ b i))))
+      (let* ((sizes (type-sizes (%gpu-stream-types gpu-stream)))
+	     (float-size (cffi:foreign-type-size :float))
+	     (offsets (mapcar (lambda (offset) (* offset float-size)) (%gpu-stream-offsets gpu-stream)))
+	     (stride (* float-size (%gpu-stream-stride gpu-stream))))
 	(when core-profile
 	  (gl:bind-vertex-array vao))
 	(setf vbo (gl:gen-buffer))
@@ -41,12 +36,11 @@
 	(loop for i from 0 below (length sizes)
 	      do (gl:enable-vertex-attrib-array i)
 		 (when core-profile
-		   (gl:vertex-attrib-pointer i (elt sizes i) :float nil strides (elt offsets i))))
+		   (gl:vertex-attrib-pointer i (elt sizes i) :float nil stride (elt offsets i))))
 	(when (%gpu-stream-index-array gpu-stream)
 	  (setf ibo (gl:gen-buffer))
 	  (gl:bind-buffer :element-array-buffer ibo)
 	  (%gl:buffer-data :element-array-buffer (* 4 (length (%gpu-stream-index-array gpu-stream))) (cffi:null-pointer) :static-draw))
-	(setf (%gpu-stream-info gpu-stream) (list :sizes sizes :strides strides :offsets offsets))
 	(when core-profile
 	  (gl:bind-vertex-array 0)))
       (setf (getf (buffers environment) gpu-stream) (list -1 vao vbo ibo)))))

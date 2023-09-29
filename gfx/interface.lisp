@@ -14,8 +14,7 @@
   index-array
   length
   update-time
-  info
-  strides
+  stride
   offsets)
 
 

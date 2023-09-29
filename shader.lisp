@@ -9,8 +9,11 @@
 	  (code-type-name variable-obj) (code-line variable-obj)))
 
 (defmethod process-input-vertex ((version (eql 330)) variable-obj count)
-  (format *stream* "layout(location=~d) in ~a ~a;~%"
-	  count (code-type-name variable-obj) (code-line variable-obj)))
+  (if (typep variable-obj 'code-object-array)
+      (format *stream* "layout(location=~d) in ~a ~a[~d];~%"
+	      count (code-type-name variable-obj) (code-line variable-obj) (size variable-obj))
+    (format *stream* "layout(location=~d) in ~a ~a;~%"
+	    count (code-type-name variable-obj) (code-line variable-obj))))
 
 (defun process-input-geometry (name var-name type)
   (format *stream* "in ~a ~a[];~%" (process-type-name type) var-name)
@@ -44,15 +47,22 @@
   (let* ((location-count 0)
 	 (version (shader-version shader)))
     (loop for input in (getf (shader-io-spec shader) :in)
-	  do (destructuring-bind (name type)
+	  do (destructuring-bind (name type &optional size)
 		 input
 	       (let ((var-name (regex-replace-all "-" (string-downcase name) "_")))
 		 (when (gethash name *variable-table*)
 		   (error "already has name input var \"~a\"" name))
 		 (case (shader-type shader)
-		   (:vertex (let ((newobj (setf (gethash name *variable-table*) (make-code-object type var-name))))
+		   (:vertex (let ((newobj (setf (gethash name *variable-table*) (if size (make-instance 'code-object-array
+											   :size size
+											   :code-type (list :array type size)
+											   :base-type type
+											   :code-line var-name
+											   :read-p nil
+											   :write-p nil)
+										  (make-code-object type var-name)))))
 			      (progn (process-input-vertex version newobj location-count)
-				     (incf location-count))))
+				     (incf location-count (if size size 1)))))
 		   (:geometry (process-input-geometry name var-name type))
 		   (:fragment (let ((newobj (setf (gethash name *variable-table*) (make-code-object type var-name)))
 				    (fmt (ecase version
