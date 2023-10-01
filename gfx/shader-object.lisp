@@ -89,7 +89,8 @@
 				     (fixnum #'gl:uniformi)
 				     (float #'gl:uniformf)
 				     (list #'(lambda (location lst) (apply #'gl:uniformf location lst)))
-				     ((simple-array single-float (*)) (lambda (location vector) (gl:uniform-matrix-4fv location vector nil))))))
+				     ((simple-array single-float (*)) (lambda (location vector) (gl:uniform-matrix-4fv location vector nil)))
+				     (simple-vector (lambda (location vector) (gl:uniform-matrix location 4 vector nil))))))
 			  (setf location (cons fun loc))
 			  (when ,debug
 			    (format t "register uniform location ~d for ~a~%" loc name)))
