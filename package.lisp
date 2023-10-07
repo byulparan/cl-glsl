@@ -66,7 +66,16 @@
 	   #:track-mouse-pan
 	   #:reset-camera
 	   #:eval-camera
-	   #:read-obj-file
+	   #:eye-x
+	   #:eye-y
+	   #:eye-z
+	   #:center-x
+	   #:center-y
+	   #:center-z
+	   #:up-x
+	   #:up-y
+	   #:up-z
 
+	   #:read-obj-file
 	   #:load-quad-stream))
 
