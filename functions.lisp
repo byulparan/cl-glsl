@@ -44,7 +44,7 @@
       (gethash :vec4 *function-table*) (lambda (v) (assert (eql :float (code-type v)))
 					 (make-code-object :vec4 (format nil "vec4(~a)" (code-line v))))
       ;; mat3 function used for type-casting between matrinx
-      (gethash :mat3 *function-table*) (lambda (v) (assert (eql :float (code-type v)))
+      (gethash :mat3 *function-table*) (lambda (v) 
 					 (make-code-object :mat3 (format nil "mat3(~a)" (code-line v))))
       (gethash :mat4 *function-table*) (lambda (v) (assert (eql :float (code-type v)))
 					 (make-code-object :mat4 (format nil "mat4(~a)" (code-line v))))
