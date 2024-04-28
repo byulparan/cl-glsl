@@ -128,6 +128,9 @@
 (defstruct gfx-spec name parent child type source kind connected-pipelines)
 
 
+(defun add-uniform (name type)
+  (setf (gethash name gfx::*gfx-uniform-table*) (glsl::make-code-object type (ppcre:regex-replace-all "-" (string-downcase name) "_"))))
+
 
 (defun reinit-shader-system ()
   (loop for lib being the hash-values of *library-spec-table*

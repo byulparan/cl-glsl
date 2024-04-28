@@ -48,6 +48,7 @@
 	   #:defstruct-g
 	   #:defmacro-g
 
+	   #:add-uniform
 	   #:reinit-shader-system
 	   #:defpipeline
 
