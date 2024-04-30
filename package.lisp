@@ -78,5 +78,5 @@
 	   #:up-z
 
 	   #:read-obj-file
-	   #:load-quad-stream))
+	   #:load-box-primitive))
 

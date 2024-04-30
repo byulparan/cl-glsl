@@ -1,6 +1,6 @@
 (in-package #:gfx)
 
-(defun load-quad-stream ()
+(defun load-box-primitive ()
   (gfx:make-gpu-stream '((pos :vec3) (coord :vec2) (norm :vec3) )
 		       (list
 			1.0 -1.0 1.0 1.0 1.0 0.0 -1.0 0.0 
