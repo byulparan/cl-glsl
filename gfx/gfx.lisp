@@ -278,7 +278,7 @@
 			       (glsl::make-shader :version version :type type
 						  :io-spec (second source)
 						  :uniforms (%pipeline-uniforms pipeline)
-						  :source (third source)
+						  :source (cons 'progn (cddr source))
 						  :function #'process-global))
 			  (alexandria:appendf used-function glsl::*used-global*))))))
     (loop for used-func in (%pipeline-used-funcs pipeline)
@@ -295,23 +295,36 @@
     (alexandria:when-let ((func (gethash name *gfx-spec-table*)))
       func)))
 
+
+(defun process-io-spec (stage next-stage)
+  (let* ((io-spec (second stage))
+	 (next-io-spec (second next-stage)))
+    (when (and (not (getf io-spec :out)) (getf next-io-spec :in))
+      (setf (getf (second stage) :out) (getf next-io-spec :in)))))
+
+
 (defmacro defpipeline (name uniforms &body stages)
-  (assert (every (lambda (stage) (= 3 (length stage))) stages) nil "each stages should be have 3 element(type, io-spec, body)")
   (assert (every (lambda (stage) (find (car stage) '(:vertex :geometry :fragment))) stages) nil
 	  "pipeline stage should be one of '(:vertex :geometry :fragment). but your stages are ~a" (mapcar #'car stages))
   (when (atom name) (setf name (list name :version glsl::*glsl-version*)))
   (let* ((version (third name))
 	 (name (car name))
-	 (stream-type (mapcar #'second (getf (second (first stages)) :in))))
+	 (stream-type (mapcar #'second (getf (second (first stages)) :in)))
+	 (vertex-src (find :vertex stages :key #'car))
+	 (geometry-src (find :geometry stages :key #'car))
+	 (fragment-src (find :fragment stages :key #'car)))
+    (process-io-spec vertex-src (or geometry-src fragment-src))
+    (when geometry-src
+      (process-io-spec geometry-src fragment-src))
     (alexandria:with-gensyms (pipeline legacy program)
       `(let* ((,legacy (gethash ',name *all-pipeline-table*))
 	      (,pipeline (make-%pipeline :name ',name
 					 :version ,version
 					 :used-funcs (when ,legacy (%pipeline-used-funcs ,legacy))
 					 :uniforms ',uniforms
-					 :vertex-src ',(find :vertex stages :key #'car)
-					 :geometry-src ',(find :geometry stages :key #'car)
-					 :fragment-src ',(find :fragment stages :key #'car))))
+					 :vertex-src ',vertex-src
+					 :geometry-src ',geometry-src
+					 :fragment-src ',fragment-src)))
 	 (compile-pipeline ,pipeline)
 	 (setf (gethash ',name *all-pipeline-table*) ,pipeline)))))
 
