@@ -1,8 +1,6 @@
 (asdf:defsystem :cl-glsl
   :serial t
   :depends-on (#:cl-opengl
-	       #:cl-glu
-	       #:cl-glut
 	       #:cl-ppcre
 	       #:split-sequence
 	       #:sb-cga
