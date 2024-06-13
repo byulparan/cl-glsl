@@ -78,5 +78,15 @@
 	   #:up-z
 
 	   #:read-obj-file
-	   #:load-box-primitive))
+	   #:load-box-primitive
+
+	   #:load-model
+	   #:model-scene
+	   #:model-meshes
+	   #:mesh-gpu-stream
+	   #:mesh-textures
+	   #:mesh-bones
+	   #:mesh-transform
+	   #:mesh-bone-transforms
+	   #:animation))
 

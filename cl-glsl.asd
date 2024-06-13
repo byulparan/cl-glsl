@@ -1,6 +1,7 @@
 (asdf:defsystem :cl-glsl
   :serial t
   :depends-on (#:cl-opengl
+	       #:classimp
 	       #:cl-ppcre
 	       #:split-sequence
 	       #:sb-cga
@@ -20,4 +21,5 @@
 	       (:file "gfx/camera")
 	       (:file "gfx/read-wavefront")
 	       (:file "gfx/mesh")
+	       (:file "gfx/model")
 	       (:file "gfx/shader-library")))
