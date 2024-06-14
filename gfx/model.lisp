@@ -149,6 +149,8 @@
 
 
 (defun animation (model index time)
+  (assert (> (length (ai:animations (model-scene model))) index) nil
+	  "Out of index to the animation the model has: ~d" index)
   (unless (model-animation-transition model)
     (setf (model-animation-transition model) (make-animation-transition :current index
 									:factor .0
