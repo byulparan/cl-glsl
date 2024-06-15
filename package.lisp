@@ -84,7 +84,7 @@
 	   #:model-scene
 	   #:model-meshes
 	   #:mesh-gpu-stream
-	   #:mesh-textures
+	   #:mesh-material
 	   #:mesh-bones
 	   #:mesh-transform
 	   #:mesh-bone-transforms

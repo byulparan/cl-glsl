@@ -2,7 +2,7 @@
 
 (defstruct model scene node-table meshes animation-transition)
 (defstruct node name transform anim-index)
-(defstruct mesh name node node-table bones gpu-stream textures)
+(defstruct mesh name node node-table bones gpu-stream material)
 (defstruct animation-transition current factor status)
 
 
@@ -58,8 +58,6 @@
       (let* ((face (aref (ai:faces ai-mesh) i)))
 	(dotimes (j (length face))
 	  (push (aref face j) indices))))
-    (let* ((material (aref (ai:materials scene) (ai:material-index ai-mesh))))
-      (setf textures (mapcar #'caddr (gethash "$tex.file" material))))
     (make-mesh :name (ai:name ai-mesh)
 	       :node node
 	       :node-table node-table
@@ -71,7 +69,7 @@
 			     (gfx:make-gpu-stream '((pos :vec3) (coord :vec2) (norm :vec3))
 						  (nreverse vertices)
 						  :index-data (nreverse indices)))
-	       :textures textures)))
+	       :material (aref (ai:materials scene) (ai:material-index ai-mesh)))))
 
 
 
