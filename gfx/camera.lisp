@@ -112,10 +112,20 @@
   (compute-polar-orientation camera)
   camera)
 
-(defun eval-camera (camera)
+(defun look-at (camera)
   (kit.math:look-at (kit.math:vec3 (eye-x camera) (eye-y camera) (eye-z camera))
 		     (kit.math:vec3 (center-x camera) (center-y camera) (center-z camera))
 		     (kit.math:vec3 (up-x camera) (up-y camera) (up-z camera))))
+
+
+
+(defun camera-position (camera)
+  (list (eye-x camera) (eye-y camera) (eye-z camera)))
+
+(defun camera-target (camera)
+  (list (center-x camera) (center-y camera) (center-z camera)))
+
+
 
 (defmethod initialize-instance :after ((self camera) &key (eye-x 0.0) (eye-y 0.0) (eye-z 5.0)
 						       (center-x 0.0) (center-y 0.0) (center-z 0.0))

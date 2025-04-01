@@ -66,16 +66,9 @@
 	   #:track-mouse-zoom
 	   #:track-mouse-pan
 	   #:reset-camera
-	   #:eval-camera
-	   #:eye-x
-	   #:eye-y
-	   #:eye-z
-	   #:center-x
-	   #:center-y
-	   #:center-z
-	   #:up-x
-	   #:up-y
-	   #:up-z
+	   #:look-at
+	   #:camera-position
+	   #:camera-target
 
 	   #:read-obj-file
 	   #:load-box-primitive
