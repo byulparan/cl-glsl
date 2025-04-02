@@ -32,7 +32,6 @@
 	   #:shader-environment
 	   #:release-environment
 
-	   #:update-gpu-stream
 	   #:make-gpu-stream
 	   #:gpu-stream-set
 	   #:gpu-stream-length
