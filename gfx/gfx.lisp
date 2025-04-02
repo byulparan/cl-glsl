@@ -66,11 +66,13 @@
 
 
 (defun gpu-stream-length (gpu-stream)
+  "The length of the internal data values of `GPU-STREAM' is returned. If gpu-stream has an index buffer, its length is returned instead. Here, the term “length” refers to the number of vertex data elements."
   (if (%gpu-stream-index-array gpu-stream) (length (%gpu-stream-index-array gpu-stream))
     (%gpu-stream-length gpu-stream)))
 
 
 (defun vertex (stream index name)
+  "You can retrieve the Nth item of a `GPU-STREAM'. If the gpu-stream contains an array of data with a type like `'((pos :vec3) (tex-coord :vec2))`, you can access it using `(gfx:vertex *stream* 0 'pos)` and write values using `(setf (gfx:vertex *stream* 0 'pos) ...)`. For implementation reasons, gpu-stream can only hold single-float type single values or arrays."
   (let* ((types (%gpu-stream-types stream))
 	 (stride (%gpu-stream-stride stream))
 	 (name-index (position name types :key #'car))
