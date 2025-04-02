@@ -24,8 +24,7 @@
 
 (defpackage :gfx
   (:use #:cl #:glsl)
-  (:export #:deg-to-rad
-	   #:get-internal-seconds
+  (:export #:get-internal-seconds
 
 	   #:shader
 	   #:vbo

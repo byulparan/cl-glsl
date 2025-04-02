@@ -1,8 +1,6 @@
 (in-package :gfx)
-;;; utility
-(defun deg-to-rad (deg)
-  (coerce (* pi (/ deg 180.0)) 'single-float))
 
+;;; utility
 (defun get-internal-seconds ()
   (* (/ 1.0 INTERNAL-TIME-UNITS-PER-SECOND) (get-internal-real-time)))
 
