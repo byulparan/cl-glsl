@@ -72,7 +72,7 @@
     (%gpu-stream-length gpu-stream)))
 
 
-(defun vertex (stream name index)
+(defun vertex (stream index name)
   (let* ((types (%gpu-stream-types stream))
 	 (stride (%gpu-stream-stride stream))
 	 (name-index (position name types :key #'car))
@@ -88,7 +88,7 @@
     result-value))
 
 
-(defun (setf vertex) (values stream name index)
+(defun (setf vertex) (values stream index name)
   (let* ((types (%gpu-stream-types stream))
 	 (stride (%gpu-stream-stride stream))
 	 (name-index (position name types :key #'car))
