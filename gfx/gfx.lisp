@@ -54,6 +54,9 @@ Examples:
 (defun gpu-stream-set (gpu-stream data &key index-data)
   (let* ((sizes (type-sizes (%gpu-stream-types gpu-stream) ))
 	 (size (apply #'+ sizes)))
+    (when (%gpu-stream-array gpu-stream)
+      (assert (= (length (%gpu-stream-array gpu-stream)) (length data))  nil
+	      "The length of the input data does not match the initial length of GPU-STREAM. This is not allowed."))
     (etypecase data
       (list (let ((data-array (alexandria:flatten data)))
 	      (setf (%gpu-stream-array gpu-stream)
