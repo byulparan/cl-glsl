@@ -24,6 +24,21 @@
 	   collect (loop for i below len collect sz)))))
 
 (defun make-gpu-stream (type data &key index-data (core-profile t))
+  "create GPU-STREAM object. `type' argument takes a list of lists in the form `(name type)`. For example, `((pos :vec3) (color :vec3))`. The `data' argument takes a list of columns containing data values corresponding to the types defined earlier. The length of the data must match the types defined earlier. If you want to use an index buffer, input a list of integers into the `index-data' argument. For implementation reasons, the `data' can only contain values of the `float` type.
+
+Examples:
+;; A GPU-stream with three vertex data points.
+(gfx:make-gpu-stream '((pos :vec3) (color :vec3)) (list -1.0 -1.0 0.0 1.0 1.0 1.0
+                                                     1.0 -1.0 0.0 1.0 0.0 0.0
+                                                     0.0  1.0 0.0 1.0 0.0 1.0))
+
+
+;; If integer values are input into the `data` argument, an internal data array initialized with `0.0` for the length of the given values will be created.
+
+(defvar *gpu-stream* (gfx:make-gpu-stream '((pos :vec3) (color :vec3)) 6))
+(gfx:gpu-stream-length *gpu-stream*) ;; => 6
+(length (gfx::%gpu-stream-array *gpu-stream*)) ;; => 36
+"
   (let* ((type-size (type-sizes type))
 	 (gpu-stream (make-%gpu-stream :types type
 				       :stride (apply #'+ type-size)
