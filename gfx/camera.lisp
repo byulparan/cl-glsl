@@ -11,7 +11,8 @@
    (up-y :accessor up-y)
    (up-z :accessor up-z)
    (azimuth :accessor azimuth)
-   (zenith :accessor zenith)))
+   (zenith :accessor zenith))
+  (:documentation "Camera objects useful for viewing 3D scenes. Gives you a very simple to use interactive camera to view your scene."))
 
 (defun track-mouse-zoom (camera dx dy Gain)
   (declare (ignore dx))
@@ -100,6 +101,7 @@
 
 (defun reset-camera (camera &key (eye-x 0.0) (eye-y 0.0) (eye-z 5.0)
 			      (center-x 0.0) (center-y 0.0) (center-z 0.0))
+  "Set the camera’s position and target."
   (setf (eye-x camera) eye-x
 	(eye-y camera) eye-y
 	(eye-z camera) eye-z)
@@ -112,7 +114,9 @@
   (compute-polar-orientation camera)
   camera)
 
+
 (defun look-at (camera)
+  "Perform the lookAt function through the camera object. This is useful for calculating the view matrix."
   (kit.math:look-at (kit.math:vec3 (eye-x camera) (eye-y camera) (eye-z camera))
 		     (kit.math:vec3 (center-x camera) (center-y camera) (center-z camera))
 		     (kit.math:vec3 (up-x camera) (up-y camera) (up-z camera))))
@@ -120,9 +124,11 @@
 
 
 (defun camera-position (camera)
+  "Set the position of the camera."
   (list (eye-x camera) (eye-y camera) (eye-z camera)))
 
 (defun camera-target (camera)
+  "Set the target of the camera."
   (list (center-x camera) (center-y camera) (center-z camera)))
 
 

@@ -52,6 +52,7 @@ Examples:
     gpu-stream))
 
 (defun gpu-stream-set (gpu-stream data &key index-data)
+  "It is used to set the entire data of the `GPU-STREAM'. The length must be the same as the initially configured data."
   (let* ((sizes (type-sizes (%gpu-stream-types gpu-stream) ))
 	 (size (apply #'+ sizes)))
     (when (%gpu-stream-array gpu-stream)
@@ -147,10 +148,12 @@ Examples:
 
 
 (defun add-uniform (name type)
+  "This is used to declare an arbitrary uniform variable in advance within the pipeline system. It is utilized in functions like `gfx:defun-g' and must subsequently be defined in `gfx:defpipeline'."
   (setf (gethash name gfx::*gfx-uniform-table*) (glsl::make-code-object type (ppcre:regex-replace-all "-" (string-downcase name) "_"))))
 
 
 (defun reinit-shader-system ()
+  "It re-initializes the variable and function space, as well as user-defined types, in the current pipeline system."
   (loop for lib being the hash-values of *library-spec-table*
 	do (setf (gfx-spec-connected-pipelines lib) nil))
   (setf *gfx-all-type* (copy-list glsl::*all-glsl-type*)
@@ -200,12 +203,17 @@ Examples:
 	     (compile-pipeline (gethash pipeline *all-pipeline-table*)))))
        ',name)))
 
+
+
 (defmacro defmacro-g (name args &body body)
+  "Define custom macro functions in the current pipeline system."
   `(let* ((glsl::*macro-table* *gfx-macro-table*))
      (glsl::v-defmacro ,name ,args
        ,@body)))
 
+
 (defmacro defun-g (name args &body body)
+  "Define global functions in the current pipeline system."
   (flet ((process-arg (arg)
 	   (destructuring-bind (name type &optional scope count)
 	       arg
@@ -216,13 +224,17 @@ Examples:
        (glsl::compile-form
 	'(labels ((,name ,args ,@body)))))))
 
+
 (defmacro defvar-g (name body)
+  "Define global variables in the current pipeline system."
   `(with-update-global ,name glsl::*return-value*
        :variable
      (glsl::compile-form
       '(labels ((,name ,body))))))
 
+
 (defmacro defstruct-g (name &body form)
+  "Define a structure type in the current pipeline system."
   `(let* ((glsl::*structures* nil)
 	  (glsl::*function-table* *gfx-function-table*)
 	  (glsl::*all-glsl-type* *gfx-all-type*)
@@ -308,6 +320,7 @@ Examples:
 
 
 (defun pull-g (name)
+  "Check the GLSL source code of the compiled pipeline, including global functions and variables."
   (alexandria:if-let ((pipeline (gethash name *all-pipeline-table*)))
     (%pipeline-shader-src pipeline)
     (alexandria:when-let ((func (gethash name *gfx-spec-table*)))
@@ -322,6 +335,19 @@ Examples:
 
 
 (defmacro defpipeline (name uniforms &body stages)
+  "Define a pipeline, which includes vertex, geometry, and fragment shaders. If the current stage does not have the `:out' keyword and the next stage has the `:in' keyword, it will be automatically added as the `:out' of the current stage. The last expression of the vertex shader is used as `gl_Position', and the last expression of the fragment shader is used as the output data.
+
+Examples:
+
+(gfx:defpipeline demo-pipeline ((model-view-projection :mat4) (time :float))
+  (:vertex (:in ((pos :vec3) (coord :vec2) (normal :vec3)))
+	   (setf v-pos pos
+		 v-normal normal)
+	   (* model-view-projection (v! pos 1.0)))
+  (:fragment (:in ((v-pos :vec3) (v-normal :vec3)))
+	     (v! (normalize v-pos) 1.0)))
+
+"
   (assert (every (lambda (stage) (find (car stage) '(:vertex :geometry :fragment))) stages) nil
 	  "pipeline stage should be one of '(:vertex :geometry :fragment). but your stages are ~a" (mapcar #'car stages))
   (when (atom name) (setf name (list name :version glsl::*glsl-version*)))
