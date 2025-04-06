@@ -20,6 +20,6 @@
 	       (:file "gfx/fbo")
 	       (:file "gfx/camera")
 	       (:file "gfx/read-wavefront")
-	       (:file "gfx/mesh")
+	       (:file "gfx/primitives")
 	       (:file "gfx/model")
 	       (:file "gfx/shader-library")))

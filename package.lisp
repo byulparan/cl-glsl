@@ -70,6 +70,7 @@
 
 	   #:read-obj-file
 	   #:load-box-primitive
+	   #:load-sphere-primitive
 
 	   #:load-model
 	   #:model-scene
