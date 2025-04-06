@@ -5,47 +5,65 @@
 
 (in-package #:gfx)
 
-(defun load-box-primitive ()
-  (gfx:make-gpu-stream '((pos :vec3) (coord :vec2) (norm :vec3))
-		       (list
-			1.0 -1.0 1.0 1.0 1.0 0.0 -1.0 0.0 
-	        	-1.0 -1.0 -1.0 0.0 0.0 0.0 -1.0 0.0 
-			1.0 -1.0 -1.0 1.0 0.0 0.0 -1.0 0.0 
-		        -1.0 1.0 -1.0 0.0 1.0   0.0 1.0 0.0 
-			1.0 1.0  1.0 1.0 0.0  0.0 1.0 0.0 
-			1.0 1.0 -1.0  1.0 1.0  0.0 1.0 0.0 
-			1.0 1.0 -1.0  1.0 1.0   1.0 -0.0 0.0 
-			1.0 -1.0 1.0 0.0 0.0  1.0 -0.0 0.0 
-			1.0 -1.0 -1.0 1.0 0.0   1.0 -0.0 0.0 
-			1.0 1.0 1.0  1.0 1.0  0.0 -0.0 1.0 
-			-1.0 -1.0 1.0 0.0 0.0   0.0 -0.0 1.0 
-			1.0 -1.0 1.0 1.0 0.0   0.0 -0.0 1.0 
-			-1.0 -1.0 1.0  1.0 0.0   -1.0 -0.0 -0.0 
-			-1.0 1.0 -1.0  0.0 1.0 -1.0 -0.0 -0.0 
-			-1.0 -1.0 -1.0 0.0 0.0  -1.0 -0.0 -0.0 
-			1.0 -1.0 -1.0 0.0 0.0   0.0 0.0 -1.0 
-			-1.0 1.0 -1.0 1.0 1.0   0.0 0.0 -1.0 
-			1.0 1.0 -1.0 0.0 1.0  0.0 0.0 -1.0 
-			-1.0 -1.0 1.0  0.0 1.0   0.0 -1.0 0.0 
-			-1.0 1.0 1.0  0.0 0.0     0.0 1.0 0.0 
-			1.0 1.0 1.0 0.0 1.0  1.0 -0.0 0.0 
-			-1.0 1.0 1.0 0.0 1.0   0.0 -0.0 1.0 
-			-1.0 1.0 1.0 1.0 1.0  -1.0 -0.0 -0.0 
-			-1.0 -1.0 -1.0 1.0 0.0  0.0 0.0 -1.0 )
-		       :index-data
-		       (list
-			0 1 2
-			3 4 5
-			6 7 8
-			9 10 11
-			12 13 14
-			15 16 17
-			0 18 1
-			3 19 4
-			6 20 7
-			9 21 10
-			12 22 13
-			15 23 16)))
+(defun load-box-primitive (&key (width 1.0) (height 1.0) (depth 1.0))
+  (flet ((generate-box-mesh (width height depth)
+	   (let ((vertices '())
+		 (indices '())
+		 (i 0)) ; current index
+	     (let* ((hx (/ width 2.0))
+		    (hy (/ height 2.0))
+		    (hz (/ depth 2.0)))
+	       (flet ((v (x y z) (list x y z))
+		      (add-quad (p0 p1 p2 p3 normal)
+			;; Adds 4 vertices and 2 triangles (6 indices)
+			(let ((start-i i))
+			  (push (append p0 '(0.0 0.0) normal) vertices)
+			  (push (append p1 '(1.0 0.0) normal) vertices)
+			  (push (append p2 '(1.0 1.0) normal) vertices)
+			  (push (append p3 '(0.0 1.0) normal) vertices)
+			  (push (+ start-i 0) indices)
+			  (push (+ start-i 1) indices)
+			  (push (+ start-i 2) indices)
+			  (push (+ start-i 0) indices)
+			  (push (+ start-i 2) indices)
+			  (push (+ start-i 3) indices)
+			  (setf i (+ i 4)))))
+		 ;; Front face (+Z)
+		 (add-quad
+		  (v (- hx) (- hy) hz) (v hx (- hy) hz)
+		  (v hx hy hz) (v (- hx) hy hz)
+		  '(0.0 0.0 1.0))
+		 ;; Back face (-Z)
+		 (add-quad
+		  (v hx (- hy) (- hz)) (v (- hx) (- hy) (- hz))
+		  (v (- hx) hy (- hz)) (v hx hy (- hz))
+		  '(0.0 0.0 -1.0))
+		 ;; Left face (-X)
+		 (add-quad
+		  (v (- hx) (- hy) (- hz)) (v (- hx) (- hy) hz)
+		  (v (- hx) hy hz) (v (- hx) hy (- hz))
+		  '(-1.0 0.0 0.0))
+		 ;; Right face (+X)
+		 (add-quad
+		  (v hx (- hy) hz) (v hx (- hy) (- hz))
+		  (v hx hy (- hz)) (v hx hy hz)
+		  '(1.0 0.0 0.0))
+		 ;; Top face (+Y)
+		 (add-quad
+		  (v (- hx) hy hz) (v hx hy hz)
+		  (v hx hy (- hz)) (v (- hx) hy (- hz))
+		  '(0.0 1.0 0.0))
+		 ;; Bottom face (-Y)
+		 (add-quad
+		  (v (- hx) (- hy) (- hz)) (v hx (- hy) (- hz))
+		  (v hx (- hy) hz) (v (- hx) (- hy) hz)
+		  '(0.0 -1.0 0.0))
+		 ;; Return values
+		 (values (alexandria:flatten (reverse vertices)) (reverse indices)))))))
+    (multiple-value-bind (vertices indices)
+	(generate-box-mesh width height depth)
+      (gfx:make-gpu-stream '((pos :vec3) (coord :vec2) (norm :vec3))
+			   vertices :index-data indices))))
 
 
 
