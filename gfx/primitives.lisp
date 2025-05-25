@@ -1,4 +1,4 @@
-
+;; 
 ;; 2025.04.06 byulparan@gmail.com
 ;; 
 ;; 
@@ -115,5 +115,51 @@
 			   :index-data indices))))
 
 
+(defun load-circle-primitive (&key (radius 1.0) (segments 32))
+  (flet ((generate-circle-mesh ()
+	   (let ((vertices '())
+		 (indices '()))
+	     ;; 중심 정점 추가
+	     (let ((x 0.0)
+		   (y 0.0)
+		   (z 0.0)
+		   (nx 0.0)
+		   (ny 0.0)
+		   (nz 1.0)
+		   (u 0.5)
+		   (v 0.5))
+	       (setf vertices (list x y z u v nx ny nz)))
+
+	     ;; 각도 단위 계산
+	     (let ((angle-step (/ (* 2 (float pi 1.0)) segments)))
+	       ;; 외곽 정점들
+	       (dotimes (i segments)
+		 (let* ((angle (* i angle-step))
+			(x (* radius (cos angle)))
+			(y (* radius (sin angle)))
+			(z 0.0)
+			(u (+ 0.5 (* 0.5 (cos angle))))
+			(v (+ 0.5 (* 0.5 (sin angle))))
+			(nx 0.0)
+			(ny 0.0)
+			(nz 1.0))
+		   ;; interleaved 정점
+		   (setf vertices (append vertices (list x y z u v nx ny nz)))))
+
+	       ;; 인덱스 (삼각형 팬 방식)
+	       (dotimes (i segments)
+		 (let ((next (mod (+ i 1) segments)))
+		   (push 0 indices)
+		   (push (+ 1 next) indices)
+		   (push (+ 1 i) indices)))
+	       (setf indices (reverse indices)))
+
+	     ;; 결과 반환
+	     (values vertices indices))))
+    (multiple-value-bind (vertices indices)
+	(generate-circle-mesh)
+      (gfx:make-gpu-stream '((pos :vec3) (coord :vec2) (norm :vec3))
+			   vertices
+			   :index-data indices))))
 
 
