@@ -71,6 +71,7 @@
 	   #:read-obj-file
 	   #:load-box-primitive
 	   #:load-sphere-primitive
+	   #:load-cylinder-primitive
 	   #:load-circle-primitive
 
 	   #:load-model

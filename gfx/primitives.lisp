@@ -115,6 +115,103 @@
 			   :index-data indices))))
 
 
+
+
+(defun load-cylinder-primitive (&key (radius 1.0) (height 1.0) (segments 32))
+  (flet ((generate-cylinder-mesh (radius height slices)
+	   (let* ((angle-step (/ (* 2 (float pi 1.0)) slices))
+		  (half-height (/ height 2))
+		  (vertices '())
+		  (indices '())
+		  (side-start-idx 0))
+
+	     ;; Side vertices
+	     (setf side-start-idx (/ (length vertices) 8))
+	     (dotimes (i (1+ slices))
+	       (let* ((angle (float (* i angle-step)))
+		      (x (float (* radius (cos angle))))
+		      (z (float (* radius (sin angle))))
+		      (nx (float (cos angle)))
+		      (nz (float (sin angle)))
+		      (u (float (/ i slices))))
+		 ;; bottom vertex
+		 (push x vertices) (push (- half-height) vertices) (push z vertices)
+		 (push u vertices) (push 0.0 vertices)
+		 (push nx vertices) (push 0.0 vertices) (push nz vertices)
+		 ;; top vertex
+		 (push x vertices) (push half-height vertices) (push z vertices)
+		 (push u vertices) (push 1.0 vertices)
+		 (push nx vertices) (push 0.0 vertices) (push nz vertices)))
+
+	     ;; Side indices
+	     (dotimes (i slices)
+	       (let ((i0 (+ side-start-idx (* 2 i)))
+		     (i1 (+ side-start-idx (* 2 (1+ i)))))
+		 (push i0 indices)
+		 (push (1+ i0) indices)
+		 (push i1 indices)
+
+		 (push i1 indices)
+		 (push (1+ i0) indices)
+		 (push (1+ i1) indices)))
+
+	     ;; Bottom cap
+	     (let ((center-start (/ (length vertices) 8)))
+	       ;; center vertex
+	       (push 0.0 vertices) (push (- half-height) vertices) (push 0.0 vertices)
+	       (push 0.5 vertices) (push 0.5 vertices)
+	       (push 0.0 vertices) (push -1.0 vertices) (push 0.0 vertices)
+	       (dotimes (i (1+ slices))
+		 (let* ((angle (* i angle-step))
+			(x (* radius (cos angle)))
+			(z (* radius (sin angle)))
+			(u (+ 0.5 (* 0.5 (cos angle))))
+			(v (+ 0.5 (* 0.5 (sin angle)))))
+		   (push x vertices) (push (- half-height) vertices) (push z vertices)
+		   (push u vertices) (push v vertices)
+		   (push 0.0 vertices) (push -1.0 vertices) (push 0.0 vertices)))
+	       ;; indices
+	       (dotimes (i slices)
+		 (let ((center center-start)
+		       (p1 (+ center-start 1 i))
+		       (p2 (+ center-start 2 i)))
+		   (push center indices)
+		   (push p2 indices)
+		   (push p1 indices))))
+
+	     ;; Top cap
+	     (let ((center-start (/ (length vertices) 8)))
+	       ;; center vertex
+	       (push 0.0 vertices) (push half-height vertices) (push 0.0 vertices)
+	       (push 0.5 vertices) (push 0.5 vertices)
+	       (push 0.0 vertices) (push 1.0 vertices) (push 0.0 vertices)
+	       (dotimes (i (1+ slices))
+		 (let* ((angle (* i angle-step))
+			(x (* radius (cos angle)))
+			(z (* radius (sin angle)))
+			(u (+ 0.5 (* 0.5 (cos angle))))
+			(v (+ 0.5 (* 0.5 (sin angle)))))
+		   (push x vertices) (push half-height vertices) (push z vertices)
+		   (push u vertices) (push v vertices)
+		   (push 0.0 vertices) (push 1.0 vertices) (push 0.0 vertices)))
+	       ;; indices
+	       (dotimes (i slices)
+		 (let ((center center-start)
+		       (p1 (+ center-start 1 i))
+		       (p2 (+ center-start 2 i)))
+		   (push center indices)
+		   (push p1 indices)
+		   (push p2 indices))))
+	     ;; Return
+	     (values (nreverse vertices) (nreverse indices)))))
+    (multiple-value-bind (vertices indices)
+	(generate-cylinder-mesh (float radius 1.0) (float height 1.0) (floor segments))
+      (gfx:make-gpu-stream '((pos :vec3) (coord :vec2) (norm :vec3))
+			   vertices
+			   :index-data indices))))
+
+
+
 (defun load-circle-primitive (&key (radius 1.0) (segments 32))
   (flet ((generate-circle-mesh ()
 	   (let ((vertices '())
