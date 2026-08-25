@@ -9,7 +9,8 @@
 
 (defclass framebuffer-object (%framebuffer-object)
   ((texture-target :initarg :texture-target :reader texture-target)
-   (ext-texture-p :initarg :ext-tuxture-p :reader ext-texture-p)))
+   (ext-texture-p :initarg :ext-tuxture-p :reader ext-texture-p)
+   (format :initarg :format)))
 
 (defclass multisample-framebuffer-object (%framebuffer-object)
   ((output-fbo :initarg :output-fbo :reader output-fbo)))
@@ -18,12 +19,19 @@
   (let* ((framebuffer (framebuffer fbo))
 	 (texture (colorbuffer fbo))
 	 (target (texture-target fbo))
-	 (depthbuffer (depthbuffer fbo)))
+	 (depthbuffer (depthbuffer fbo))
+	 (format (slot-value fbo 'format)))
     (setf (width fbo) width (height fbo) height)
     (gl:bind-framebuffer :framebuffer framebuffer)
     (unless (ext-texture-p fbo) 
       (gl:bind-texture target texture)
-      (gl:tex-image-2d  target 0 :rgba8 width height 0 :rgba :unsigned-byte (cffi:null-pointer))
+      (gl:tex-image-2d  target 0 format width height 0 :rgba
+			(ecase format
+			  ;; 일단 이 3가지 포맷만 지원
+			  (:rgba8 :unsigned-byte)
+			  (:rgba16f :half-float)
+			  (:rgba32f :float))
+			(cffi:null-pointer))
       (gl:tex-parameter target :texture-min-filter :linear)
       (gl:tex-parameter target :texture-mag-filter :linear)
       (gl:tex-parameter target :texture-wrap-s :clamp-to-edge)
@@ -47,7 +55,7 @@
 	 (depthbuffer (depthbuffer fbo)))
     (gl:bind-framebuffer :framebuffer framebuffer)
     (gl:bind-renderbuffer :renderbuffer colorbuffer)
-    (gl:renderbuffer-storage-multisample :renderbuffer 4 :rgba8 width height)
+    (gl:renderbuffer-storage-multisample :renderbuffer 4 (slot-value (output-fbo fbo) 'format) width height)
     (gl:bind-renderbuffer :renderbuffer 0)
     (gl:framebuffer-renderbuffer :framebuffer :color-attachment0 :renderbuffer colorbuffer)
     (gl:bind-renderbuffer :renderbuffer depthbuffer)
@@ -59,14 +67,14 @@
     (gl:bind-framebuffer :framebuffer 0)
     fbo))
 
-(defun make-fbo (width height &key multisample texture (target :texture-2d))
+(defun make-fbo (width height &key multisample texture (target :texture-2d) (format :rgba8))
   (let* ((fbo (let* ((framebuffer (gl:gen-framebuffer))
 		     (colorbuffer (if texture texture (gl:gen-texture)))
 		     (depthbuffer (gl:gen-renderbuffer)))
 		(make-instance 'framebuffer-object
 		  :width width :height height :framebuffer framebuffer
 		  :colorbuffer colorbuffer :texture-target target :depthbuffer depthbuffer
-		  :ext-tuxture-p (if texture t nil)))))
+		  :format format :ext-tuxture-p (if texture t nil)))))
     (if multisample (let* ((framebuffer (gl:gen-framebuffer))
 			   (colorbuffer (gl:gen-renderbuffer))
 			   (depthbuffer (gl:gen-renderbuffer)))
