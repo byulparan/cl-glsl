@@ -10,6 +10,7 @@
 (defclass framebuffer-object (%framebuffer-object)
   ((texture-target :initarg :texture-target :reader texture-target)
    (ext-texture-p :initarg :ext-tuxture-p :reader ext-texture-p)
+   (ext-depth-texture-p :initarg :ext-depth-tuxture-p :reader ext-depth-texture-p)
    (format :initarg :format)))
 
 (defclass multisample-framebuffer-object (%framebuffer-object)
@@ -38,10 +39,13 @@
       (gl:tex-parameter target :texture-wrap-t :clamp-to-edge)
       (gl:bind-texture target 0))
     (gl:framebuffer-texture-2d :framebuffer :color-attachment0 target texture 0)
-    (gl:bind-renderbuffer :renderbuffer depthbuffer)
-    (gl:renderbuffer-storage :renderbuffer :depth-component width height)
-    (gl:bind-renderbuffer :renderbuffer 0)
-    (gl:framebuffer-renderbuffer :framebuffer :depth-attachment :renderbuffer depthbuffer)
+    (if (ext-depth-texture-p fbo)
+	(gl:framebuffer-texture-2d :framebuffer :depth-attachment target depthbuffer 0)
+      (progn
+	(gl:bind-renderbuffer :renderbuffer depthbuffer)
+	(gl:renderbuffer-storage :renderbuffer :depth-component width height)
+	(gl:bind-renderbuffer :renderbuffer 0)
+	(gl:framebuffer-renderbuffer :framebuffer :depth-attachment :renderbuffer depthbuffer)))
     (unless (eql :framebuffer-complete-oes (gl:check-framebuffer-status-ext :framebuffer))
       (error "can't (re)initialize framebuffer"))
     (gl:bind-framebuffer :framebuffer 0)
@@ -67,14 +71,14 @@
     (gl:bind-framebuffer :framebuffer 0)
     fbo))
 
-(defun make-fbo (width height &key multisample texture (target :texture-2d) (format :rgba8))
+(defun make-fbo (width height &key multisample texture depth-texture (target :texture-2d) (format :rgba8))
   (let* ((fbo (let* ((framebuffer (gl:gen-framebuffer))
 		     (colorbuffer (if texture texture (gl:gen-texture)))
-		     (depthbuffer (gl:gen-renderbuffer)))
+		     (depthbuffer (if depth-texture depth-texture (gl:gen-renderbuffer))))
 		(make-instance 'framebuffer-object
 		  :width width :height height :framebuffer framebuffer
 		  :colorbuffer colorbuffer :texture-target target :depthbuffer depthbuffer
-		  :format format :ext-tuxture-p (if texture t nil)))))
+		  :format format :ext-tuxture-p (if texture t nil) :ext-depth-tuxture-p (if depth-texture t nil)))))
     (if multisample (let* ((framebuffer (gl:gen-framebuffer))
 			   (colorbuffer (gl:gen-renderbuffer))
 			   (depthbuffer (gl:gen-renderbuffer)))
@@ -98,6 +102,14 @@
 (defun output-texture (fbo)
   (if (typep fbo 'multisample-framebuffer-object) (output-texture (output-fbo fbo))
     (colorbuffer fbo)))
+
+(defun depth-texture (fbo)
+  (let* ((fbo (if (typep fbo 'multisample-framebuffer-object) (output-fbo fbo)
+		fbo)))
+    (assert (ext-depth-texture-p fbo))
+    (depthbuffer fbo)))
+
+
 
 (defun resolve-fbo (multisample-framebuffer-object)
   (let* ((draw-fbo (output-fbo multisample-framebuffer-object))

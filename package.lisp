@@ -54,7 +54,8 @@
 	   #:reinit-fbo
 	   #:width
 	   #:height
-	   #:output-texture 
+	   #:output-texture
+	   #:depth-texture
 	   #:release-fbo
 	   #:with-fbo
 	   #:*fbo-stack*
