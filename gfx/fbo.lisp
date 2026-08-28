@@ -108,7 +108,7 @@
     (progn
       (unless (ext-texture-p fbo) (gl:delete-texture (colorbuffer fbo)))
       (if (use-depth-texture-p fbo) (gl:delete-texture (depthbuffer fbo))
-	(gl:delete-renderbuffer (depthbuffer fbo)))))
+	(gl:delete-renderbuffers (list (depthbuffer fbo))))))
   (gl:delete-framebuffer (framebuffer fbo)))
 
 (defun output-texture (fbo)
