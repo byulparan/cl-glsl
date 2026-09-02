@@ -73,6 +73,7 @@
 	   #:load-box-primitive
 	   #:load-sphere-primitive
 	   #:load-cylinder-primitive
+	   #:load-plane-primitive
 	   #:load-circle-primitive
 
 	   #:load-model

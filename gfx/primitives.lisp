@@ -212,6 +212,61 @@
 
 
 
+
+
+(defun load-plane-primitive (&key (width 1.0) (height 1.0) (segments-x 1) (segments-y 1))
+  (flet ((generate-plane-mesh ()
+           (let ((vertices '())
+                 (indices '())
+                 (half-w (/ (float width 1.0) 2.0))
+                 (half-h (/ (float height 1.0) 2.0)))
+             
+             ;; 1. 정점 생성 (XY 평면, Z = 0)
+             (dotimes (y-idx (1+ segments-y))
+               (let* ((v-factor (/ (float y-idx 1.0) segments-y))
+                      (y (- (* v-factor height) half-h))
+                      (v v-factor)) ; UV 좌표의 V축 반전 (선택 사항)
+                 (dotimes (x-idx (1+ segments-x))
+                   (let* ((u-factor (/ (float x-idx 1.0) segments-x))
+                          (x (- (* u-factor width) half-w))
+                          (z 0.0)
+                          (u u-factor)
+                          (nx 0.0)
+                          (ny 0.0)
+                          (nz 1.0))
+                     ;; interleaved 정점
+                     (setf vertices (append vertices (list x y z u v nx ny nz)))))))
+
+             ;; 2. 인덱스 생성 (격자별 2개 삼각형)
+             (dotimes (y-idx segments-y)
+               (dotimes (x-idx segments-x)
+                 (let* ((row-stride (1+ segments-x))
+                        (top-left     (+ (* y-idx row-stride) x-idx))
+                        (top-right    (+ top-left 1))
+                        (bottom-left  (+ (* (1+ y-idx) row-stride) x-idx))
+                        (bottom-right (+ bottom-left 1)))
+                   
+                   ;; 첫 번째 삼각형 (CCW: top-left -> bottom-left -> top-right)
+                   (push top-left indices)
+                   (push bottom-left indices)
+                   (push top-right indices)
+                   
+                   ;; 두 번째 삼각형 (CCW: top-right -> bottom-left -> bottom-right)
+                   (push top-right indices)
+                   (push bottom-left indices)
+                   (push bottom-right indices))))
+             
+             (setf indices (nreverse indices))
+             (values vertices indices))))
+
+    (multiple-value-bind (vertices indices)
+        (generate-plane-mesh)
+      (gfx:make-gpu-stream '((pos :vec3) (coord :vec2) (norm :vec3))
+                           vertices
+                           :index-data indices))))
+
+
+
 (defun load-circle-primitive (&key (radius 1.0) (segments 32))
   (flet ((generate-circle-mesh ()
 	   (let ((vertices '())
