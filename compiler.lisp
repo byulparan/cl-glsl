@@ -124,7 +124,7 @@
 			   (mapcar #'check-glsl-type
 				   ',(mapcar #'(lambda (obj) (gethash (first obj) *variable-table*)) args)
 				    ,(cons 'list rename-args)))
-		    nil "GLSL: call function \"~a\" with wrong type input ~a != ~a"
+		    nil "GLSL: call function \"~a\" with wrong type input (~{~a~^,~}) != :in (~{~a~^,~})"
 		    ',name
 		    ',(mapcar #'(lambda (obj) (code-type (gethash (first obj) *variable-table*))) args)
 		    (mapcar #'code-type ,(cons 'list rename-args)))
