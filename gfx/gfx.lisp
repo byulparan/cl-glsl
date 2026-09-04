@@ -225,6 +225,43 @@ Examples:
 	'(labels ((,name ,args ,@body)))))))
 
 
+(defmacro defun-glsl (name source)
+  "Define global function from GLSL in the current pipeline system."
+  (let* ((spec (second (multiple-value-list
+			(ppcre:scan-to-strings "(\\w+) (\\w+).*\\((.*)\\)"
+					       (subseq source 0 (position #\{ source :test #'char=))))) )
+	 (fun-return-type (intern (string-upcase (aref spec 0)) :keyword))
+	 (fun-name (aref spec 1))
+	 (fun-args (mapcar (lambda (in)
+			     (let* ((in (ppcre:regex-replace "^ +" in "")))
+			       (ppcre:regex-replace "^in* "  in "")))
+			   (uiop:split-string (aref spec 2) :separator '(#\,))))
+	 (fun-args-name (mapcar (lambda (in)
+				  (intern (string-upcase (aref (second (multiple-value-list (ppcre:scan-to-strings " (\\w+)" in))) 0))))
+				fun-args))
+	 (fun-args-type (mapcar (lambda (in)
+				  (intern (string-upcase (ppcre:scan-to-strings "\\w+" in)) :keyword))
+				fun-args)))
+    `(gfx::with-update-global ,name
+	 (LIST ,fun-return-type ',fun-args-type)
+	 :FUNCTION
+       (progn
+	 (setf (gethash ',name gfx::*gfx-function-table*)
+	   (lambda ,fun-args-name
+	     (assert (and ,@(mapcar (lambda (name type)
+				      `(eql (glsl::code-type ,name) ,type))
+				    fun-args-name fun-args-type)) nil
+				    "GLSL: call function \"~a\" with wrong type input (~{~a~^,~}) != :in (~{~a~^,~})"
+				    ',name
+				    (list ,@fun-args-type)
+				    (mapcar (lambda (p) (glsl::code-type p)) (list ,@fun-args-name)))
+	     (glsl::make-code-object :float (format nil  "~a(~{~a~^,~})" ,fun-name (mapcar (lambda (in) (glsl::code-line in)) (list ,@fun-args-name)))
+				     :use-global-p t)))
+	 (setf glsl::*global-functions*
+	   (list ,source))))))
+
+
+
 (defmacro defvar-g (name body)
   "Define global variables in the current pipeline system."
   `(with-update-global ,name glsl::*return-value*

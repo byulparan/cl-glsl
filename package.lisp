@@ -42,6 +42,7 @@
 	   
 	   #:pull-g
 	   #:defun-g
+	   #:defun-glsl
 	   #:defvar-g
 	   #:defstruct-g
 	   #:defmacro-g
